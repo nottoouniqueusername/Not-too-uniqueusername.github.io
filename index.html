@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XSearch CM Query Sequencer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --accent-2: #34d399;
+      --warn: #f59e0b;
+      --border: #374151;
+      --chip: #0b1220;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(180deg, #0b1020, #111827 35%, #0f172a 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+      line-height: 1.1;
+    }
+    .sub {
+      color: var(--muted);
+      margin-bottom: 24px;
+      max-width: 900px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .card {
+      background: rgba(17,24,39,0.92);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+    }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .help {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-top: 6px;
+      margin-bottom: 12px;
+    }
+    textarea, input, select {
+      width: 100%;
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    .checks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      margin-top: 6px;
+    }
+    .check {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(11,18,32,0.65);
+    }
+    .check input { width: auto; margin-top: 3px; }
+    .check label {
+      margin: 0;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    button {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .03s ease, opacity .2s ease, background .2s ease;
+    }
+    button:active { transform: translateY(1px); }
+    .primary { background: linear-gradient(90deg, var(--accent), #818cf8); color: white; }
+    .secondary { background: #0b1220; color: var(--text); border-color: var(--border); }
+    .success { background: linear-gradient(90deg, var(--accent-2), #10b981); color: #052e16; }
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .pillbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .pill {
+      border: 1px solid var(--border);
+      background: var(--chip);
+      color: var(--muted);
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: .86rem;
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .section-title h2 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+    .output-box {
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      min-height: 220px;
+    }
+    .query-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .query-item {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .query-top {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(96,165,250,0.15);
+      color: #bfdbfe;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border: 1px solid rgba(96,165,250,0.3);
+      margin-right: 6px;
+    }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.93rem;
+    }
+    .query-code {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+    }
+    .muted { color: var(--muted); }
+    .tiny { font-size: 0.82rem; }
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 16px;
+      line-height: 1.45;
+    }
+    .warning {
+      border-left: 4px solid var(--warn);
+      padding: 10px 12px;
+      background: rgba(245,158,11,0.08);
+      border-radius: 10px;
+      color: #fde68a;
+      margin-top: 14px;
+      font-size: 0.92rem;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>XSearch CM Query Sequencer</h1>
+    <div class="sub">
+      One-click generation of sequential <strong>CM</strong> searches for XSearch 4. Built for browser-only use, with a conservative/chaos toggle and an examiner-mode split between uploadable record searches and off-record cleanup searches.
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <label for="markInput">Proposed mark</label>
+        <textarea id="markInput" placeholder="Enter one mark, or multiple marks on separate lines&#10;Examples:&#10;BLUE KAT&#10;KATZ DELI"></textarea>
+        <div class="help">The tool normalizes to lowercase for regex generation and builds only <strong>CM:</strong> lines.</div>
+
+        <div class="row">
+          <div>
+            <label for="modeSelect">Breadth</label>
+            <select id="modeSelect">
+              <option value="conservative">Conservative</option>
+              <option value="chaos">Chaos</option>
+            </select>
+          </div>
+          <div>
+            <label for="workflowSelect">Workflow</label>
+            <select id="workflowSelect">
+              <option value="examiner">Examiner mode</option>
+              <option value="single">Single combined set</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="separatorFlex">Separator flex</label>
+            <select id="separatorFlex">
+              <option value="tight">Tight</option>
+              <option value="normal" selected>Normal</option>
+              <option value="wide">Wide</option>
+            </select>
+            <div class="help">Controls how much punctuation/connector space gets inserted between words.</div>
+          </div>
+          <div>
+            <label for="phoneticPairs">Custom phonetic pairs</label>
+            <input id="phoneticPairs" placeholder="c/k, i/y, ph/f" />
+            <div class="help">Comma-separated pairs. Applied lightly.</div>
+          </div>
+        </div>
+
+        <label>Include generators</label>
+        <div class="checks">
+          <div class="check"><input type="checkbox" id="gExact" checked><label for="gExact">Exact regex form</label></div>
+          <div class="check"><input type="checkbox" id="gLiteral" checked><label for="gLiteral">Literal CM term</label></div>
+          <div class="check"><input type="checkbox" id="gSep" checked><label for="gSep">Word separator variants</label></div>
+          <div class="check"><input type="checkbox" id="gPlural" checked><label for="gPlural">Plural/possessive edge</label></div>
+          <div class="check"><input type="checkbox" id="gVowels" checked><label for="gVowels">Light vowel swaps</label></div>
+          <div class="check"><input type="checkbox" id="gConsonants" checked><label for="gConsonants">Light consonant swaps</label></div>
+          <div class="check"><input type="checkbox" id="gDecomp" checked><label for="gDecomp">Decomposition terms</label></div>
+          <div class="check"><input type="checkbox" id="gRoot" checked><label for="gRoot">Root/stem broadening</label></div>
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="generateBtn">Generate searches</button>
+          <button class="secondary" id="sampleBtn">Load sample</button>
+          <button class="secondary" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="warning">
+          This tool is intentionally opinionated, not omniscient. It favors speed and repeatability, then leaves room for human judgment and custom phonetics.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          <h2>Generated queries</h2>
+          <div class="btns" style="margin-top:0">
+            <button class="secondary" id="copyAllBtn">Copy all</button>
+            <button class="success" id="copySemicolonBtn">Copy as semicolon batch</button>
+          </div>
+        </div>
+
+        <div class="pillbar" id="summaryPills"></div>
+
+        <div class="output-box">
+          <div id="outputArea" class="muted">No queries yet. Feed the machine a mark and it will start tossing regex sparks.</div>
+        </div>
+
+        <div class="footer-note" id="footerNote">
+          Examiner mode splits output into an <strong>upload/search-record set</strong> and a <strong>cleanup set</strong>. Single combined set keeps everything in one numbered run.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const settings = {
+      vowels: new Set(['a','e','i','o','u','y']),
+      lightMap: {
+        'c': '[ckq]',
+        'k': '[ckq]',
+        'q': '[ckq]',
+        's': '[sz]',
+        'z': '[sz]',
+        'f': '(ph|f+)',
+        'j': '(d?[gj]|d{0,1}[gj])',
+        'g': '(d?[gj]|d{0,1}[gj])',
+        'y': '[iy]',
+        'i': '[iy]',
+        'u': '[ou]',
+        'o': '[ou]',
+      }
+    };
+
+    function normalizeMark(mark) {
+      return mark
+        .trim()
+        .replace(/[“”]/g, '"')
+        .replace(/[’]/g, "'")
+        .replace(/\s+/g, ' ')
+        .toLowerCase();
+    }
+
+    function splitWords(mark) {
+      return normalizeMark(mark)
+        .split(/\s+/)
+        .filter(Boolean);
+    }
+
+    function escapeRegexLiteral(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function regexSeparator(level) {
+      if (level === 'tight') return '[^a-z0-9]{0,1}';
+      if (level === 'wide') return '[^a-z0-9]{0,4}';
+      return '[^a-z0-9]{0,2}';
+    }
+
+    function makeExactRegex(words, sepFlex) {
+      return `CM:/${words.map(escapeRegexLiteral).join(regexSeparator(sepFlex))}/`;
+    }
+
+    function makeLiteral(mark) {
+      const norm = normalizeMark(mark);
+      return /[^a-z0-9]/.test(norm) ? `CM:"${norm}"` : `CM:${norm}`;
+    }
+
+    function makeSepRegex(words, sepFlex) {
+      return `CM:/.*${words.map(escapeRegexLiteral).join(regexSeparator(sepFlex))}.*/`;
+    }
+
+    function pluralizeLastWordRegex(words, sepFlex) {
+      if (!words.length) return null;
+      const cloned = [...words];
+      const last = cloned.pop();
+      let lastRegex = escapeRegexLiteral(last);
+      if (last.endsWith('y') && last.length > 1) {
+        const stem = escapeRegexLiteral(last.slice(0, -1));
+        lastRegex = `${stem}(y|ie[sz])`;
+      } else if (last.endsWith('s')) {
+        lastRegex = `${escapeRegexLiteral(last)}('?s)?`;
+      } else {
+        lastRegex = `${escapeRegexLiteral(last)}('?s|e?[sz])?`;
+      }
+      const joined = [...cloned.map(escapeRegexLiteral), lastRegex].join(regexSeparator(sepFlex));
+      return `CM:/.*${joined}.*/`;
+    }
+
+    function lightVowelRegex(word) {
+      const chars = [...word].map(ch => settings.vowels.has(ch) ? '[aeiouy]{0,2}' : escapeRegexLiteral(ch));
+      return chars.join('');
+    }
+
+    function lightConsonantRegex(word, customPairs) {
+      const pairMap = {...settings.lightMap};
+      for (const [a,b] of customPairs) {
+        pairMap[a] = `[${escapeRegexLiteral(a)}${escapeRegexLiteral(b)}]`;
+        pairMap[b] = `[${escapeRegexLiteral(a)}${escapeRegexLiteral(b)}]`;
+      }
+      return [...word].map(ch => pairMap[ch] || escapeRegexLiteral(ch)).join('');
+    }
+
+    function parsePairs(input) {
+      return input
+        .split(',')
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean)
+        .map(p => p.split('/').map(x => x.trim()).filter(Boolean))
+        .filter(arr => arr.length === 2 && arr[0].length === 1 && arr[1].length === 1);
+    }
+
+    function rootTerm(word) {
+      let w = word;
+      if (w.length > 5 && w.endsWith('ing')) return w.slice(0, -3);
+      if (w.length > 4 && w.endsWith('ed')) return w.slice(0, -2);
+      if (w.length > 4 && w.endsWith('es')) return w.slice(0, -2);
+      if (w.length > 3 && w.endsWith('s')) return w.slice(0, -1);
+      return w;
+    }
+
+    function dedupe(items) {
+      const seen = new Set();
+      const out = [];
+      for (const item of items) {
+        const key = item.query;
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(item);
+      }
+      return out;
+    }
+
+    function buildQueriesForMark(mark, opts) {
+      const words = splitWords(mark);
+      if (!words.length) return [];
+      const norm = normalizeMark(mark);
+      const customPairs = parsePairs(opts.phoneticPairs);
+      const queries = [];
+      const record = [];
+      const cleanup = [];
+
+      function add(target, label, query, tier) {
+        if (query) target.push({label, query, tier});
+      }
+
+      if (opts.gLiteral) add(record, 'Literal CM term', makeLiteral(norm), 'record');
+      if (opts.gExact) add(record, 'Exact regex', makeExactRegex(words, 'tight'), 'record');
+      if (opts.gSep && words.length > 1) add(record, 'Separator-flex exact', makeSepRegex(words, opts.separatorFlex), 'record');
+      if (opts.gPlural) add(record, 'Plural/possessive edge', pluralizeLastWordRegex(words, opts.separatorFlex), 'record');
+
+      if (opts.gVowels) {
+        const vowelRegex = words.map(w => lightVowelRegex(w)).join(regexSeparator(opts.separatorFlex));
+        add(opts.mode === 'conservative' ? cleanup : record, 'Light vowel net', `CM:/.*${vowelRegex}.*/`, opts.mode === 'conservative' ? 'cleanup' : 'record');
+      }
+
+      if (opts.gConsonants) {
+        const consRegex = words.map(w => lightConsonantRegex(w, customPairs)).join(regexSeparator(opts.separatorFlex));
+        add(cleanup, 'Light consonant/phonetic net', `CM:/.*${consRegex}.*/`, 'cleanup');
+      }
+
+      if (opts.gDecomp && words.length > 1) {
+        for (const w of words) {
+          add(cleanup, `Single word: ${w}`, `CM:/.*${escapeRegexLiteral(w)}.*/`, 'cleanup');
+        }
+        if (words.length === 2) {
+          add(cleanup, 'Terms in either order', `CM:/.*(${escapeRegexLiteral(words[0])}.*${escapeRegexLiteral(words[1])}|${escapeRegexLiteral(words[1])}.*${escapeRegexLiteral(words[0])}).*/`, 'cleanup');
+        }
+      }
+
+      if (opts.gRoot) {
+        for (const w of words) {
+          const root = rootTerm(w);
+          if (root && root !== w && root.length >= 3) {
+            add(cleanup, `Root/stem: ${root}`, `CM:/.*${escapeRegexLiteral(root)}.*/`, 'cleanup');
+          } else if (w.length >= 5) {
+            add(cleanup, `Truncated root: ${w.slice(0, Math.max(3, w.length - 2))}`, `CM:/.*${escapeRegexLiteral(w.slice(0, Math.max(3, w.length - 2)))}.*/`, 'cleanup');
+          }
+        }
+      }
+
+      if (opts.mode === 'chaos') {
+        if (words.length > 1) {
+          add(cleanup, 'Broader internal truncation', `CM:/.*${words.map(w => escapeRegexLiteral(rootTerm(w))).join('.{0,4}')}.*/`, 'cleanup');
+        }
+        const compressed = words.join('');
+        if (compressed.length >= 4) {
+          add(cleanup, 'Compressed form', `CM:/.*${escapeRegexLiteral(compressed)}.*/`, 'cleanup');
+        }
+      }
+
+      return { record: dedupe(record), cleanup: dedupe(cleanup) };
+    }
+
+    function gatherOptions() {
+      return {
+        mode: el('modeSelect').value,
+        workflow: el('workflowSelect').value,
+        separatorFlex: el('separatorFlex').value,
+        phoneticPairs: el('phoneticPairs').value,
+        gExact: el('gExact').checked,
+        gLiteral: el('gLiteral').checked,
+        gSep: el('gSep').checked,
+        gPlural: el('gPlural').checked,
+        gVowels: el('gVowels').checked,
+        gConsonants: el('gConsonants').checked,
+        gDecomp: el('gDecomp').checked,
+        gRoot: el('gRoot').checked,
+      };
+    }
+
+    let lastRender = { allQueries: [] };
+
+    function renderQueries() {
+      const raw = el('markInput').value.trim();
+      const outputArea = el('outputArea');
+      const pills = el('summaryPills');
+      pills.innerHTML = '';
+      if (!raw) {
+        outputArea.innerHTML = '<span class="muted">No queries yet. Feed the machine a mark and it will start tossing regex sparks.</span>';
+        lastRender = { allQueries: [] };
+        return;
+      }
+
+      const opts = gatherOptions();
+      const marks = raw.split(/\n+/).map(s => s.trim()).filter(Boolean);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'query-list';
+      const allQueries = [];
+
+      marks.forEach((mark, idx) => {
+        const { record, cleanup } = buildQueriesForMark(mark, opts);
+        const card = document.createElement('div');
+        card.className = 'query-item';
+        const heading = document.createElement('div');
+        heading.className = 'query-top';
+        heading.innerHTML = `<div><strong>${idx + 1}. ${mark}</strong><div class="tiny muted">${record.length} record / ${cleanup.length} cleanup</div></div>`;
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'secondary';
+        copyBtn.textContent = 'Copy this set';
+        copyBtn.onclick = async () => {
+          const joined = makeCopyText(mark, record, cleanup, opts.workflow);
+          await navigator.clipboard.writeText(joined);
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => copyBtn.textContent = 'Copy this set', 1000);
+        };
+        heading.appendChild(copyBtn);
+        card.appendChild(heading);
+
+        const body = document.createElement('div');
+
+        if (opts.workflow === 'examiner') {
+          body.appendChild(renderSection('Examiner / upload set', record, allQueries));
+          body.appendChild(renderSection('Cleanup set', cleanup, allQueries));
+        } else {
+          body.appendChild(renderSection('Combined set', dedupe([...record, ...cleanup]), allQueries));
+        }
+        card.appendChild(body);
+        wrapper.appendChild(card);
+      });
+
+      outputArea.innerHTML = '';
+      outputArea.appendChild(wrapper);
+      lastRender = { allQueries };
+
+      addPill(`Marks: ${marks.length}`);
+      addPill(`Total queries: ${allQueries.length}`);
+      addPill(`Mode: ${opts.mode}`);
+      addPill(`Workflow: ${opts.workflow}`);
+
+      function addPill(text) {
+        const d = document.createElement('div');
+        d.className = 'pill';
+        d.textContent = text;
+        pills.appendChild(d);
+      }
+    }
+
+    function renderSection(title, list, collector) {
+      const sec = document.createElement('div');
+      sec.style.marginBottom = '12px';
+      const h = document.createElement('div');
+      h.innerHTML = `<span class="badge">${title}</span>`;
+      sec.appendChild(h);
+
+      if (!list.length) {
+        const empty = document.createElement('div');
+        empty.className = 'tiny muted';
+        empty.textContent = 'No queries generated for this section.';
+        sec.appendChild(empty);
+        return sec;
+      }
+
+      const ol = document.createElement('div');
+      ol.style.display = 'flex';
+      ol.style.flexDirection = 'column';
+      ol.style.gap = '8px';
+
+      list.forEach((item, i) => {
+        collector.push(item.query);
+        const row = document.createElement('div');
+        row.style.borderTop = '1px dashed rgba(156,163,175,0.25)';
+        row.style.paddingTop = '8px';
+        row.innerHTML = `<div class="tiny muted" style="margin-bottom:4px">${i + 1}. ${item.label}</div><pre class="query-code">${item.query}</pre>`;
+        ol.appendChild(row);
+      });
+      sec.appendChild(ol);
+      return sec;
+    }
+
+    function makeCopyText(mark, record, cleanup, workflow) {
+      const lines = [`# ${mark}`];
+      if (workflow === 'examiner') {
+        lines.push('', '[Examiner / upload set]');
+        record.forEach((q, i) => lines.push(`${i + 1}. ${q.query}`));
+        lines.push('', '[Cleanup set]');
+        cleanup.forEach((q, i) => lines.push(`${i + 1}. ${q.query}`));
+      } else {
+        const combined = dedupe([...record, ...cleanup]);
+        combined.forEach((q, i) => lines.push(`${i + 1}. ${q.query}`));
+      }
+      return lines.join('\n');
+    }
+
+    async function copyAll(asSemicolon = false) {
+      if (!lastRender.allQueries.length) return;
+      const text = asSemicolon
+        ? lastRender.allQueries.join('; ')
+        : lastRender.allQueries.map((q, i) => `${i + 1}. ${q}`).join('\n');
+      await navigator.clipboard.writeText(text);
+    }
+
+    el('generateBtn').addEventListener('click', renderQueries);
+    el('sampleBtn').addEventListener('click', () => {
+      el('markInput').value = 'BLUE KAT\nKATZ DELI';
+      renderQueries();
+    });
+    el('clearBtn').addEventListener('click', () => {
+      el('markInput').value = '';
+      el('phoneticPairs').value = '';
+      renderQueries();
+    });
+    el('copyAllBtn').addEventListener('click', async () => {
+      await copyAll(false);
+      el('copyAllBtn').textContent = 'Copied';
+      setTimeout(() => el('copyAllBtn').textContent = 'Copy all', 1000);
+    });
+    el('copySemicolonBtn').addEventListener('click', async () => {
+      await copyAll(true);
+      el('copySemicolonBtn').textContent = 'Copied';
+      setTimeout(() => el('copySemicolonBtn').textContent = 'Copy as semicolon batch', 1000);
+    });
+
+    ['modeSelect','workflowSelect','separatorFlex','phoneticPairs','gExact','gLiteral','gSep','gPlural','gVowels','gConsonants','gDecomp','gRoot']
+      .forEach(id => el(id).addEventListener('change', renderQueries));
+
+    renderQueries();
+  </script>
+</body>
+</html>
